@@ -2,6 +2,23 @@
 
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { LawCard } from '@/types';
+import { subcategories } from '@/data/cards';
+
+// 辅助函数：获取子类目名称
+const getSubcategoryName = (sub: string): string => {
+  const predefined = subcategories.find(s => s.id === sub);
+  return predefined ? predefined.name : sub;
+};
+
+// 辅助函数：检查是否匹配（名称或ID都算匹配）
+const matchesSubcategory = (cardSub: string, targetSub: string): boolean => {
+  if (cardSub === targetSub) return true;
+  const predefined = subcategories.find(s => s.id === targetSub || s.name === targetSub);
+  if (predefined) {
+    return cardSub === predefined.id || cardSub === predefined.name;
+  }
+  return false;
+};
 
 interface CardContextType {
   cards: LawCard[];
@@ -106,15 +123,35 @@ export function CardProvider({ children }: { children: ReactNode }) {
   };
 
   const getCardsBySubcategory = (categoryId: string, subcategoryId: string): LawCard[] => {
-    return cards.filter(card => card.category === categoryId && card.subcategory === subcategoryId);
+    return cards.filter(card => 
+      card.category === categoryId && 
+      matchesSubcategory(card.subcategory, subcategoryId)
+    );
   };
 
   const getSubcategories = (categoryId: string): string[] => {
     const categoryCards = cards.filter(card => card.category === categoryId);
-    const subSet = new Set<string>();
-    categoryCards.forEach(card => subSet.add(card.subcategory));
+    
+    // 获取预定义的子类目名称
+    const predefinedSubs = subcategories
+      .filter(s => s.categoryId === categoryId)
+      .map(s => s.name);
+    
+    // 获取卡片中的子类目名称（转换后）
+    const cardSubs = categoryCards.map(card => getSubcategoryName(card.subcategory));
+    
+    // 合并并去重
+    const subSet = new Set<string>([...predefinedSubs, ...cardSubs]);
     const subs = Array.from(subSet);
-    return subs.length > 0 ? subs : ['待定'];
+    
+    // 排序，待定放最后
+    const sortedSubs = subs.sort((a, b) => {
+      if (a === '待定') return 1;
+      if (b === '待定') return -1;
+      return a.localeCompare(b);
+    });
+    
+    return sortedSubs.length > 0 ? sortedSubs : ['待定'];
   };
 
   const getStats = () => {

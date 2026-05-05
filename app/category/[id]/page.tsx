@@ -3,16 +3,22 @@
 import { useState } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { useRouter, useParams } from 'next/navigation';
-import { categories } from '@/data/cards';
+import { categories, subcategories } from '@/data/cards';
 import { useCards } from '@/context/CardContext';
 import LawCard from '@/components/LawCard';
 import { ArrowLeft, Folder, Eye, Star, Hash, X } from 'lucide-react';
+
+// 辅助函数：获取子类目名称
+const getSubcategoryName = (sub: string): string => {
+  const predefined = subcategories.find(s => s.id === sub);
+  return predefined ? predefined.name : sub;
+};
 
 export default function CategoryPage() {
   const { isLoggedIn } = useAuth();
   const router = useRouter();
   const params = useParams();
-  const { getCardsByCategory } = useCards();
+  const { getCardsByCategory, getSubcategories } = useCards();
 
   const categoryId = decodeURIComponent(params.id as string);
   const category = categories.find(c => c.id === categoryId);
@@ -32,21 +38,25 @@ export default function CategoryPage() {
       : '0',
   };
 
-  const subcategorySet = new Set<string>();
-  allCards.forEach(c => subcategorySet.add(c.subcategory));
-  const cardSubs = Array.from(subcategorySet);
-  const allSubs = cardSubs;
+  // 获取子类目列表
+  const allSubs = getSubcategories(categoryId);
 
-  const hasPending = allCards.some(c => c.subcategory === '待定');
+  // 统计每个子类目下的卡片数量
+  const getSubcategoryCards = (subName: string) => {
+    return allCards.filter(card => {
+      const cardSubName = getSubcategoryName(card.subcategory);
+      return cardSubName === subName;
+    });
+  };
+
+  const tagsSet = new Set<string>();
+  allCards.forEach(c => c.tags.forEach(t => tagsSet.add(t)));
+  const allTags = Array.from(tagsSet);
 
   if (!isLoggedIn) {
     router.push('/login');
     return null;
   }
-
-  const tagsSet = new Set<string>();
-  allCards.forEach(c => c.tags.forEach(t => tagsSet.add(t)));
-  const allTags = Array.from(tagsSet);
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -121,9 +131,9 @@ export default function CategoryPage() {
           <div className="mb-6">
             <p className="text-sm text-gray-600 mb-3">子类目</p>
             <div className="flex flex-wrap gap-3">
-              {(hasPending ? ['待定', ...allSubs.filter(s => s !== '待定')] : allSubs).map(sub => {
-                const subCards = allCards.filter(c => c.subcategory === sub);
-                const subId = sub === '待定' ? 'pending' : encodeURIComponent(sub);
+              {allSubs.map(sub => {
+                const subCards = getSubcategoryCards(sub);
+                const subId = encodeURIComponent(sub);
                 return (
                   <button
                     key={sub}

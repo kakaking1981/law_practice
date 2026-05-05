@@ -4,7 +4,7 @@ import { useAuth } from '@/context/AuthContext';
 import { useRouter } from 'next/navigation';
 import { categories } from '@/data/cards';
 import { useCards } from '@/context/CardContext';
-import { Scale, Shield, FileText, Building, TrendingUp, Globe, ChevronRight, BookOpen, Eye, Star, ArrowLeft, Folder } from 'lucide-react';
+import { Scale, Shield, FileText, Building, TrendingUp, Globe, ChevronRight, BookOpen, Eye, Star, ArrowLeft, Folder, Shuffle } from 'lucide-react';
 
 const iconMap: Record<string, React.ReactNode> = {
   scale: <Scale className="w-8 h-8" />,
@@ -62,17 +62,46 @@ export default function LibraryPage() {
       </nav>
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="mb-8">
-          <h1 className="text-2xl font-bold text-gray-800 mb-2">知识书架</h1>
-          <p className="text-gray-600">选择法律分类开始学习</p>
+        <div className="mb-6">
+          <h1 className="text-2xl font-bold text-gray-800 mb-2">开始练习</h1>
         </div>
 
+        {/* 随机练习 - 长条列表项 */}
+        <button
+          onClick={() => router.push('/random-practice')}
+          className="w-full bg-gradient-to-r from-purple-600 to-pink-600 rounded-xl shadow-lg p-6 text-left hover:shadow-xl transition-all transform hover:-translate-y-1 group mb-8"
+        >
+          <div className="flex items-center justify-between">
+            <div className="flex items-center space-x-4">
+              <div className="bg-white/20 rounded-lg p-3 text-white">
+                <Shuffle className="w-8 h-8" />
+              </div>
+              <div>
+                <h3 className="text-xl font-semibold text-white mb-1">随机练习</h3>
+                <p className="text-white/80 text-sm">自定义条件，随机抽取卡片练习</p>
+              </div>
+            </div>
+            <ChevronRight className="w-8 h-8 text-white/60 group-hover:text-white transition-colors" />
+          </div>
+        </button>
+
+        {/* 按科目练习 - 标题 */}
+        <div className="mb-6">
+          <h2 className="text-lg font-semibold text-gray-800 mb-4">按科目练习</h2>
+        </div>
+
+        {/* 科目列表 */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
           {displayCategories.map((category) => {
             const categoryCards = getCardsByCategory(category.id);
             const readCount = categoryCards.filter(c => c.isRead).length;
             const progress = categoryCards.length > 0 ? Math.round((readCount / categoryCards.length) * 100) : 0;
-            const masteredCount = categoryCards.filter(c => c.masteryLevel >= 4).length;
+            
+            // 计算平均分
+            const masteryCards = categoryCards.filter(c => c.masteryLevel > 0);
+            const avgMastery = masteryCards.length > 0
+              ? (masteryCards.reduce((sum, c) => sum + c.masteryLevel, 0) / masteryCards.length).toFixed(1)
+              : '0';
 
             return (
               <button
@@ -109,9 +138,9 @@ export default function LibraryPage() {
                   <div className="flex items-center justify-between text-sm">
                     <span className="text-gray-600 flex items-center">
                       <Star className="w-4 h-4 mr-1" />
-                      已掌握
+                      平均分
                     </span>
-                    <span className="font-medium text-green-600">{masteredCount}</span>
+                    <span className="font-medium text-yellow-600">{avgMastery}</span>
                   </div>
 
                   <div className="w-full bg-gray-200 rounded-full h-2">

@@ -4,8 +4,26 @@ import { useState, useEffect } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { useRouter } from 'next/navigation';
 import { useCards } from '@/context/CardContext';
-import { categories } from '@/data/cards';
+import { categories, subcategories } from '@/data/cards';
 import { ArrowLeft, Save, Hash, BookMarked, Plus, ChevronDown } from 'lucide-react';
+
+// 辅助函数：获取科目的预定义子类目名称
+const getPredefinedSubcategoryNames = (categoryId: string): string[] => {
+  return subcategories
+    .filter(sub => sub.categoryId === categoryId)
+    .map(sub => sub.name);
+};
+
+// 辅助函数：判断是否是预定义子类目ID
+const isPredefinedSubcategoryId = (sub: string): boolean => {
+  return subcategories.some(s => s.id === sub);
+};
+
+// 辅助函数：获取子类目ID对应的名称
+const getSubcategoryName = (sub: string): string => {
+  const predefined = subcategories.find(s => s.id === sub);
+  return predefined ? predefined.name : sub;
+};
 
 export default function CreatePage() {
   const { isLoggedIn } = useAuth();
@@ -30,11 +48,25 @@ export default function CreatePage() {
 
   useEffect(() => {
     if (formData.category) {
-      const subs = cards
+      // 获取预定义子类目名称
+      const predefinedSubs = getPredefinedSubcategoryNames(formData.category);
+      
+      // 获取卡片中的子类目，并转换为名称（如果是预定义ID的话）
+      const cardSubs = cards
         .filter(card => card.category === formData.category)
-        .map(card => card.subcategory);
-      const uniqueSubs = Array.from(new Set(subs));
-      setAvailableSubcategories(uniqueSubs.length > 0 ? uniqueSubs : []);
+        .map(card => getSubcategoryName(card.subcategory));
+      
+      // 合并预定义和卡片中的子类目，去重
+      const allSubs = Array.from(new Set([...predefinedSubs, ...cardSubs]));
+      
+      // 排序，将"待定"放最后
+      const sortedSubs = allSubs.sort((a, b) => {
+        if (a === '待定') return 1;
+        if (b === '待定') return -1;
+        return a.localeCompare(b);
+      });
+      
+      setAvailableSubcategories(sortedSubs);
     } else {
       setAvailableSubcategories([]);
     }
@@ -60,13 +92,22 @@ export default function CreatePage() {
       .map(line => line.trim())
       .filter(line => line.length > 0);
 
+    // 查找子类目名称对应的ID（如果有的话）
+    let subcategoryValue = formData.subcategory || '待定';
+    const predefinedSub = subcategories.find(
+      s => s.categoryId === formData.category && s.name === subcategoryValue
+    );
+    if (predefinedSub) {
+      subcategoryValue = predefinedSub.id;
+    }
+
     addCard({
       title: formData.title || formData.content.substring(0, 30) + '...',
       content: formData.content,
       analysis: analysisPoints,
       tags: extractedTags,
       category: formData.category,
-      subcategory: formData.subcategory || '待定',
+      subcategory: subcategoryValue,
       chapter: formData.chapter,
       masteryLevel: 0,
     });
@@ -194,9 +235,6 @@ export default function CreatePage() {
                     <option key={sub} value={sub}>{sub}</option>
                   ))}
                   <option value="新增子类目">+ 新增子类目</option>
-                  {formData.category && (
-                    <option value="待定">待定</option>
-                  )}
                 </select>
                 <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400 pointer-events-none" />
               </div>

@@ -3,7 +3,14 @@
 import { useState } from 'react';
 import { useCards } from '@/context/CardContext';
 import { LawCard as LawCardType } from '@/types';
+import { subcategories } from '@/data/cards';
 import { Eye, Star, Clock, Tag, Edit2, Trash2, Check, Map } from 'lucide-react';
+
+// 辅助函数：获取子类目名称
+const getSubcategoryName = (sub: string): string => {
+  const predefined = subcategories.find(s => s.id === sub);
+  return predefined ? predefined.name : sub;
+};
 
 interface LawCardProps {
   card: LawCardType;
@@ -79,7 +86,7 @@ export default function LawCard({ card }: LawCardProps) {
       <div className="bg-gradient-to-br from-blue-500 to-purple-600 rounded-xl shadow-lg p-6 text-white h-auto max-w-2xl mx-auto">
         <div className="flex items-start justify-between mb-4">
           <span className="text-xs px-3 py-1.5 bg-white/20 rounded-full font-medium">
-            {card.subcategory}
+            {getSubcategoryName(card.subcategory)}
           </span>
           <div className="flex items-center space-x-3">
             <button
@@ -242,7 +249,7 @@ export default function LawCard({ card }: LawCardProps) {
     <div className="bg-white rounded-xl shadow-md p-5 h-80 flex flex-col hover:shadow-lg transition-shadow">
       <div className="flex items-start justify-between mb-3">
         <span className="text-xs px-2 py-1 bg-blue-100 text-blue-700 rounded-full font-medium">
-          {card.subcategory}
+          {getSubcategoryName(card.subcategory)}
         </span>
         <span className="flex items-center text-xs text-gray-500">
           <Clock className="w-3 h-3 mr-1" />
