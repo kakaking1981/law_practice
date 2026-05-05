@@ -1,11 +1,11 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { useRouter } from 'next/navigation';
 import { useCards } from '@/context/CardContext';
 import { categories, subcategories } from '@/data/cards';
-import { ArrowLeft, Save, Hash, BookMarked, Plus, ChevronDown } from 'lucide-react';
+import { ArrowLeft, Save, Hash, BookMarked, Plus, ChevronDown, X } from 'lucide-react';
 
 // 辅助函数：获取科目的预定义子类目名称
 const getPredefinedSubcategoryNames = (categoryId: string): string[] => {
@@ -72,6 +72,59 @@ export default function CreatePage() {
     }
   }, [formData.category, cards]);
 
+  // 获取所有已有的标签（去重，最多显示20个）
+  const existingTags = useMemo(() => {
+    const allTags = cards.flatMap(card => card.tags || []);
+    const uniqueTags = Array.from(new Set(allTags)).sort((a, b) => a.localeCompare(b));
+    return uniqueTags.slice(0, 20);
+  }, [cards]);
+
+  // 获取当前输入框中已有的标签
+  const currentTags = useMemo(() => {
+    const tagRegex = /#(\S+)/g;
+    const tags: string[] = [];
+    let match;
+    while ((match = tagRegex.exec(formData.tags)) !== null) {
+      tags.push(match[1]);
+    }
+    return tags;
+  }, [formData.tags]);
+
+  // 点击已有标签，添加到输入框
+  const handleTagClick = (tag: string) => {
+    if (!currentTags.includes(tag)) {
+      setFormData(prev => ({
+        ...prev,
+        tags: prev.tags ? `${prev.tags} #${tag}` : `#${tag}`
+      }));
+    }
+  };
+
+  // 移除已选择的标签
+  const handleRemoveTag = (tagToRemove: string) => {
+    setFormData(prev => ({
+      ...prev,
+      tags: prev.tags.split(' ').filter(t => t !== `#${tagToRemove}`).join(' ')
+    }));
+  };
+
+  // 重置表单
+  const resetForm = () => {
+    setFormData({
+      category: '',
+      subcategory: '',
+      title: '',
+      content: '',
+      analysis: '',
+      tags: '',
+      chapter: '',
+    });
+    setIsAddingNewCategory(false);
+    setIsAddingNewSubcategory(false);
+    setNewCategoryInput('');
+    setNewSubcategoryInput('');
+  };
+
   if (!isLoggedIn) {
     router.push('/login');
     return null;
@@ -112,7 +165,8 @@ export default function CreatePage() {
       masteryLevel: 0,
     });
 
-    router.push('/library');
+    // 保存后不跳转，重置表单继续录入下一张
+    resetForm();
   };
 
   const handleCategoryChange = (value: string) => {
@@ -319,6 +373,49 @@ export default function CreatePage() {
                 标签
               </span>
             </label>
+            
+            {/* 已有标签展示 */}
+            {existingTags.length > 0 && (
+              <div className="mb-3">
+                <p className="text-xs text-gray-500 mb-2">已有标签（点击添加）：</p>
+                <div className="flex flex-wrap gap-2 max-h-24 overflow-y-auto">
+                  {existingTags.map(tag => (
+                    <button
+                      key={tag}
+                      onClick={() => handleTagClick(tag)}
+                      className={`px-3 py-1 text-sm rounded-full transition-colors ${
+                        currentTags.includes(tag)
+                          ? 'bg-blue-600 text-white'
+                          : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                      }`}
+                    >
+                      #{tag}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+            
+            {/* 当前已选标签 */}
+            {currentTags.length > 0 && (
+              <div className="mb-3 flex flex-wrap gap-2">
+                {currentTags.map(tag => (
+                  <span
+                    key={tag}
+                    className="inline-flex items-center px-3 py-1 bg-blue-100 text-blue-700 rounded-full text-sm"
+                  >
+                    #{tag}
+                    <button
+                      onClick={() => handleRemoveTag(tag)}
+                      className="ml-1 hover:text-blue-900"
+                    >
+                      <X className="w-3 h-3" />
+                    </button>
+                  </span>
+                ))}
+              </div>
+            )}
+            
             <input
               type="text"
               value={formData.tags}
