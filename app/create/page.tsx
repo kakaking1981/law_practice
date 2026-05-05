@@ -4,9 +4,8 @@ import { useState, useEffect } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { useRouter } from 'next/navigation';
 import { useCards } from '@/context/CardContext';
+import { categories } from '@/data/cards';
 import { ArrowLeft, Save, Hash, BookMarked, Plus, ChevronDown } from 'lucide-react';
-
-const PREDEFINED_CATEGORIES = ['民法', '刑法', '刑诉法', '行政法', '经济法', '三国法'];
 
 export default function CreatePage() {
   const { isLoggedIn } = useAuth();
@@ -30,7 +29,7 @@ export default function CreatePage() {
   const [availableSubcategories, setAvailableSubcategories] = useState<string[]>([]);
 
   useEffect(() => {
-    if (formData.category && formData.category !== '新增科目') {
+    if (formData.category) {
       const subs = cards
         .filter(card => card.category === formData.category)
         .map(card => card.subcategory);
@@ -142,8 +141,8 @@ export default function CreatePage() {
                   required
                 >
                   <option value="">请选择科目</option>
-                  {PREDEFINED_CATEGORIES.map(cat => (
-                    <option key={cat} value={cat}>{cat}</option>
+                  {categories.map(cat => (
+                    <option key={cat.id} value={cat.id}>{cat.name}</option>
                   ))}
                   <option value="新增科目">+ 新增科目</option>
                 </select>

@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { useCards } from '@/context/CardContext';
 import { LawCard as LawCardType } from '@/types';
-import { Eye, Star, Clock, Tag, Edit2, Trash2, X, Check, Map } from 'lucide-react';
+import { Eye, Star, Clock, Tag, Edit2, Trash2, Check, Map } from 'lucide-react';
 
 interface LawCardProps {
   card: LawCardType;
@@ -15,7 +15,7 @@ export default function LawCard({ card }: LawCardProps) {
   const [editData, setEditData] = useState({
     content: card.content,
     analysis: card.analysis.join('\n'),
-    tags: card.tags.join(' '),
+    tags: card.tags.map(t => `#${t}`).join(' '),
     chapter: card.chapter,
   });
   const { updateCard, deleteCard } = useCards();
@@ -39,7 +39,7 @@ export default function LawCard({ card }: LawCardProps) {
     setEditData({
       content: card.content,
       analysis: card.analysis.join('\n'),
-      tags: card.tags.join(' '),
+      tags: card.tags.map(t => `#${t}`).join(' '),
       chapter: card.chapter,
     });
   };
@@ -50,11 +50,12 @@ export default function LawCard({ card }: LawCardProps) {
       .map(line => line.trim())
       .filter(line => line.length > 0);
 
-    const tagsArray = editData.tags
-      .split(/\s+/)
-      .map(t => t.trim())
-      .filter(t => t.length > 0 && t.startsWith('#'))
-      .map(t => t.replace(/^#/, ''));
+    const tagRegex = /#(\S+)/g;
+    const tagsArray: string[] = [];
+    let match;
+    while ((match = tagRegex.exec(editData.tags)) !== null) {
+      tagsArray.push(match[1]);
+    }
 
     updateCard(card.id, {
       content: editData.content,
@@ -75,31 +76,33 @@ export default function LawCard({ card }: LawCardProps) {
 
   if (showAnalysis) {
     return (
-      <div className="bg-gradient-to-br from-blue-500 to-purple-600 rounded-xl shadow-md p-5 text-white h-auto">
-        <div className="flex items-start justify-between mb-3">
-          <span className="text-xs px-2 py-1 bg-white/20 rounded-full">
+      <div className="bg-gradient-to-br from-blue-500 to-purple-600 rounded-xl shadow-lg p-6 text-white h-auto max-w-2xl mx-auto">
+        <div className="flex items-start justify-between mb-4">
+          <span className="text-xs px-3 py-1.5 bg-white/20 rounded-full font-medium">
             {card.subcategory}
           </span>
-          <div className="flex items-center space-x-2">
+          <div className="flex items-center space-x-3">
             <button
               onClick={() => setIsEditing(true)}
-              className="text-white/70 hover:text-white transition-colors"
+              className="flex items-center space-x-1 text-white/80 hover:text-white transition-colors px-3 py-1.5 rounded-lg hover:bg-white/10"
               title="编辑"
             >
-              <Edit2 className="w-5 h-5" />
+              <Edit2 className="w-4 h-4" />
+              <span className="text-sm font-medium">编辑</span>
             </button>
             <button
               onClick={handleDelete}
-              className="text-white/70 hover:text-red-300 transition-colors"
+              className="flex items-center space-x-1 text-white/80 hover:text-red-300 transition-colors px-3 py-1.5 rounded-lg hover:bg-white/10"
               title="删除"
             >
-              <Trash2 className="w-5 h-5" />
+              <Trash2 className="w-4 h-4" />
+              <span className="text-sm font-medium">删除</span>
             </button>
             <button
               onClick={handleClose}
-              className="text-white/70 hover:text-white transition-colors"
+              className="flex items-center space-x-1 text-white/80 hover:text-white transition-colors px-3 py-1.5 rounded-lg hover:bg-white/10"
             >
-              <X className="w-5 h-5" />
+              <span className="text-sm font-medium">返回</span>
             </button>
           </div>
         </div>
@@ -112,7 +115,7 @@ export default function LawCard({ card }: LawCardProps) {
                 value={editData.content}
                 onChange={(e) => setEditData(prev => ({ ...prev, content: e.target.value }))}
                 rows={4}
-                className="w-full px-3 py-2 bg-white/20 rounded-lg text-white placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-white/50 resize-none"
+                className="w-full px-4 py-3 bg-white/20 rounded-lg text-white placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-white/50 resize-none"
               />
             </div>
             <div>
@@ -121,7 +124,7 @@ export default function LawCard({ card }: LawCardProps) {
                 value={editData.analysis}
                 onChange={(e) => setEditData(prev => ({ ...prev, analysis: e.target.value }))}
                 rows={5}
-                className="w-full px-3 py-2 bg-white/20 rounded-lg text-white placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-white/50 resize-none"
+                className="w-full px-4 py-3 bg-white/20 rounded-lg text-white placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-white/50 resize-none"
               />
             </div>
             <div>
@@ -131,7 +134,7 @@ export default function LawCard({ card }: LawCardProps) {
                 value={editData.tags}
                 onChange={(e) => setEditData(prev => ({ ...prev, tags: e.target.value }))}
                 placeholder="#标签1 #标签2"
-                className="w-full px-3 py-2 bg-white/20 rounded-lg text-white placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-white/50"
+                className="w-full px-4 py-3 bg-white/20 rounded-lg text-white placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-white/50"
               />
             </div>
             <div>
@@ -141,63 +144,69 @@ export default function LawCard({ card }: LawCardProps) {
                 value={editData.chapter}
                 onChange={(e) => setEditData(prev => ({ ...prev, chapter: e.target.value }))}
                 placeholder="第一章;第二章"
-                className="w-full px-3 py-2 bg-white/20 rounded-lg text-white placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-white/50"
+                className="w-full px-4 py-3 bg-white/20 rounded-lg text-white placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-white/50"
               />
             </div>
-            <div className="flex gap-2">
+            <div className="flex gap-3">
               <button
                 onClick={handleSaveEdit}
-                className="flex-1 flex items-center justify-center space-x-1 px-4 py-2 bg-white text-blue-600 rounded-lg font-medium hover:bg-white/90 transition-colors"
+                className="flex-1 flex items-center justify-center space-x-2 px-5 py-2.5 bg-white text-blue-600 rounded-lg font-medium hover:bg-white/90 transition-colors"
               >
                 <Check className="w-4 h-4" />
-                <span>确认</span>
+                <span>确认保存</span>
               </button>
               <button
                 onClick={() => setIsEditing(false)}
-                className="px-4 py-2 bg-white/20 rounded-lg font-medium hover:bg-white/30 transition-colors"
+                className="px-5 py-2.5 bg-white/20 rounded-lg font-medium hover:bg-white/30 transition-colors"
               >
-                取消
+                取消编辑
               </button>
             </div>
           </div>
         ) : (
-          <>
-            <h3 className="text-lg font-semibold mb-3">案情概要</h3>
-            <p className="text-sm opacity-90 mb-4 leading-relaxed">{card.content}</p>
+          <div className="space-y-5">
+            <div>
+              <h3 className="text-lg font-semibold mb-2">案情概要</h3>
+              <p className="text-sm opacity-90 leading-relaxed bg-white/10 rounded-lg p-4">{card.content}</p>
+            </div>
 
-            <div className="flex items-center text-sm text-white/70 mb-4">
+            <div className="flex items-center text-sm text-white/70">
               <Clock className="w-4 h-4 mr-2" />
               阅读次数: {card.readCount}
             </div>
 
-            <h4 className="text-sm font-medium mb-3 flex items-center">
-              <Tag className="w-4 h-4 mr-2" />
-              核心分析点
-            </h4>
-            <ol className="space-y-2 text-sm">
-              {card.analysis.map((point, index) => (
-                <li key={index} className="flex items-start bg-white/10 rounded-lg p-2">
-                  <span className="font-bold mr-2 text-yellow-400">{index + 1}.</span>
-                  <span className="font-medium">{point}</span>
-                </li>
-              ))}
-            </ol>
+            <div>
+              <h4 className="text-sm font-medium mb-3 flex items-center">
+                <Tag className="w-4 h-4 mr-2" />
+                核心分析点
+              </h4>
+              <ol className="space-y-2 text-sm">
+                {card.analysis.map((point, index) => (
+                  <li key={index} className="flex items-start bg-white/10 rounded-lg p-3">
+                    <span className="font-bold mr-2 text-yellow-400 flex-shrink-0">{index + 1}.</span>
+                    <span className="font-medium">{point}</span>
+                  </li>
+                ))}
+              </ol>
+            </div>
 
             {chapters.length > 0 && (
-              <div className="mt-4 pt-4 border-t border-white/20">
-                <h4 className="text-sm font-medium mb-2 flex items-center">
+              <div className="pt-4 border-t border-white/20">
+                <h4 className="text-sm font-medium mb-3 flex items-center">
                   <Map className="w-4 h-4 mr-2" />
                   知识地图
                 </h4>
-                {chapters.map((chapter, index) => (
-                  <p key={index} className="text-sm text-white/80 bg-white/10 rounded px-2 py-1 mb-1">
-                    {chapter}
-                  </p>
-                ))}
+                <div className="space-y-2">
+                  {chapters.map((chapter, index) => (
+                    <p key={index} className="text-sm text-white/80 bg-white/10 rounded-lg px-3 py-2">
+                      {chapter}
+                    </p>
+                  ))}
+                </div>
               </div>
             )}
 
-            <div className="mt-4 pt-4 border-t border-white/20">
+            <div className="pt-4 border-t border-white/20">
               <div className="flex items-center justify-between text-sm mb-3">
                 <span className="flex items-center">
                   <Star className="w-4 h-4 mr-1" />
@@ -205,15 +214,15 @@ export default function LawCard({ card }: LawCardProps) {
                 </span>
               </div>
               <div>
-                <p className="text-xs mb-2">标记掌握程度:</p>
-                <div className="flex gap-2">
+                <p className="text-xs mb-3">标记掌握程度:</p>
+                <div className="grid grid-cols-5 gap-2">
                   {[1, 2, 3, 4, 5].map(level => (
                     <button
                       key={level}
                       onClick={() => handleMastery(level)}
-                      className={`flex-1 py-1.5 rounded-lg text-sm font-medium transition-all ${
+                      className={`py-2 rounded-lg text-sm font-medium transition-all ${
                         card.masteryLevel === level
-                          ? 'bg-yellow-400 text-yellow-900'
+                          ? 'bg-yellow-400 text-yellow-900 shadow-md'
                           : 'bg-white/20 hover:bg-white/30'
                       }`}
                     >
@@ -223,16 +232,16 @@ export default function LawCard({ card }: LawCardProps) {
                 </div>
               </div>
             </div>
-          </>
+          </div>
         )}
       </div>
     );
   }
 
   return (
-    <div className="bg-white rounded-xl shadow-md p-5 h-80 flex flex-col">
+    <div className="bg-white rounded-xl shadow-md p-5 h-80 flex flex-col hover:shadow-lg transition-shadow">
       <div className="flex items-start justify-between mb-3">
-        <span className="text-xs px-2 py-1 bg-blue-100 text-blue-700 rounded-full">
+        <span className="text-xs px-2 py-1 bg-blue-100 text-blue-700 rounded-full font-medium">
           {card.subcategory}
         </span>
         <span className="flex items-center text-xs text-gray-500">
@@ -251,13 +260,21 @@ export default function LawCard({ card }: LawCardProps) {
             {tag}
           </span>
         ))}
+        {card.tags.length > 3 && (
+          <span className="text-xs px-2 py-1 bg-gray-100 text-gray-500 rounded">
+            +{card.tags.length - 3}
+          </span>
+        )}
       </div>
 
       <button
         onClick={handleView}
-        className="w-full py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors"
+        className="w-full py-2.5 bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-lg text-sm font-medium hover:from-blue-700 hover:to-blue-800 transition-all shadow-sm hover:shadow-md"
       >
-        查阅分析
+        <span className="flex items-center justify-center space-x-2">
+          <Eye className="w-4 h-4" />
+          <span>查阅分析</span>
+        </span>
       </button>
     </div>
   );
