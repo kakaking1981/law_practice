@@ -1,15 +1,36 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useCards } from '@/context/CardContext';
 import { LawCard as LawCardType } from '@/types';
 import { subcategories } from '@/data/cards';
-import { Eye, Star, Clock, Tag, Edit2, Trash2, Check, Map } from 'lucide-react';
+import { Eye, Star, Clock, Tag, Edit2, Trash2, Check, Map, ChevronDown } from 'lucide-react';
 
 // 辅助函数：获取子类目名称
 const getSubcategoryName = (sub: string): string => {
   const predefined = subcategories.find(s => s.id === sub);
   return predefined ? predefined.name : sub;
+};
+
+// 辅助函数：获取科目的预定义子类目名称
+const getPredefinedSubcategoryNames = (categoryId: string): string[] => {
+  return subcategories
+    .filter(sub => sub.categoryId === categoryId)
+    .map(sub => sub.name);
+};
+
+// 辅助函数：获取子类目ID对应的名称
+const getSubcategoryIdToName = (sub: string): string => {
+  const predefined = subcategories.find(s => s.id === sub);
+  return predefined ? predefined.name : sub;
+};
+
+// 辅助函数：查找子类目名称对应的ID
+const findSubcategoryId = (categoryId: string, subName: string): string => {
+  const predefinedSub = subcategories.find(
+    s => s.categoryId === categoryId && s.name === subName
+  );
+  return predefinedSub ? predefinedSub.id : subName;
 };
 
 interface LawCardProps {
@@ -24,8 +45,37 @@ export default function LawCard({ card }: LawCardProps) {
     analysis: card.analysis.join('\n'),
     tags: card.tags.map(t => `#${t}`).join(' '),
     chapter: card.chapter,
+    subcategory: getSubcategoryIdToName(card.subcategory),
   });
-  const { updateCard, deleteCard } = useCards();
+  const { updateCard, deleteCard, cards } = useCards();
+
+  const [isAddingNewSubcategory, setIsAddingNewSubcategory] = useState(false);
+  const [newSubcategoryInput, setNewSubcategoryInput] = useState('');
+  const [availableSubcategories, setAvailableSubcategories] = useState<string[]>([]);
+
+  useEffect(() => {
+    if (card.category) {
+      // 获取预定义子类目名称
+      const predefinedSubs = getPredefinedSubcategoryNames(card.category);
+
+      // 获取卡片中的子类目，并转换为名称
+      const cardSubs = cards
+        .filter(c => c.category === card.category)
+        .map(c => getSubcategoryIdToName(c.subcategory));
+
+      // 合并预定义和卡片中的子类目，去重
+      const allSubs = Array.from(new Set([...predefinedSubs, ...cardSubs]));
+
+      // 排序，将"待定"放最后
+      const sortedSubs = allSubs.sort((a, b) => {
+        if (a === '待定') return 1;
+        if (b === '待定') return -1;
+        return a.localeCompare(b);
+      });
+
+      setAvailableSubcategories(sortedSubs);
+    }
+  }, [card.category, cards]);
 
   const handleView = () => {
     setShowAnalysis(true);
@@ -48,7 +98,10 @@ export default function LawCard({ card }: LawCardProps) {
       analysis: card.analysis.join('\n'),
       tags: card.tags.map(t => `#${t}`).join(' '),
       chapter: card.chapter,
+      subcategory: getSubcategoryIdToName(card.subcategory),
     });
+    setIsAddingNewSubcategory(false);
+    setNewSubcategoryInput('');
   };
 
   const handleSaveEdit = () => {
@@ -64,13 +117,41 @@ export default function LawCard({ card }: LawCardProps) {
       tagsArray.push(match[1]);
     }
 
+    // 查找子类目名称对应的ID
+    let subcategoryValue = editData.subcategory || '待定';
+    const predefinedSub = subcategories.find(
+      s => s.categoryId === card.category && s.name === subcategoryValue
+    );
+    if (predefinedSub) {
+      subcategoryValue = predefinedSub.id;
+    }
+
     updateCard(card.id, {
       content: editData.content,
       analysis: analysisPoints,
       tags: tagsArray,
       chapter: editData.chapter,
+      subcategory: subcategoryValue,
     });
     setIsEditing(false);
+  };
+
+  const handleSubcategoryChange = (value: string) => {
+    if (value === '新增子类目') {
+      setIsAddingNewSubcategory(true);
+      setEditData(prev => ({ ...prev, subcategory: '' }));
+    } else {
+      setIsAddingNewSubcategory(false);
+      setNewSubcategoryInput('');
+      setEditData(prev => ({ ...prev, subcategory: value }));
+    }
+  };
+
+  const handleNewSubcategoryConfirm = () => {
+    if (newSubcategoryInput.trim()) {
+      setEditData(prev => ({ ...prev, subcategory: newSubcategoryInput.trim() }));
+      setIsAddingNewSubcategory(false);
+    }
   };
 
   const handleDelete = () => {
@@ -116,6 +197,54 @@ export default function LawCard({ card }: LawCardProps) {
 
         {isEditing ? (
           <div className="space-y-4">
+            <div>
+              <label className="block text-sm font-medium mb-2">子类目</label>
+              {!isAddingNewSubcategory ? (
+                <div className="relative">
+                  <select
+                    value={editData.subcategory}
+                    onChange={(e) => handleSubcategoryChange(e.target.value)}
+                    className="w-full px-4 py-3 bg-white/20 rounded-lg text-white placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-white/50 appearance-none"
+                  >
+                    <option value="">请选择子类目（可选）</option>
+                    {availableSubcategories.map(sub => (
+                      <option key={sub} value={sub}>{sub}</option>
+                    ))}
+                    <option value="新增子类目">+ 新增子类目</option>
+                  </select>
+                  <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 w-5 h-5 text-white/60 pointer-events-none" />
+                </div>
+              ) : (
+                <div className="flex gap-2">
+                  <input
+                    type="text"
+                    value={newSubcategoryInput}
+                    onChange={(e) => setNewSubcategoryInput(e.target.value)}
+                    placeholder="输入新子类目名称"
+                    className="flex-1 px-4 py-3 bg-white/20 rounded-lg text-white placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-white/50"
+                    autoFocus
+                  />
+                  <button
+                    type="button"
+                    onClick={handleNewSubcategoryConfirm}
+                    className="px-4 py-3 bg-white text-blue-600 rounded-lg hover:bg-white/90"
+                  >
+                    确认
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setIsAddingNewSubcategory(false);
+                      setNewSubcategoryInput('');
+                    }}
+                    className="px-4 py-3 bg-white/20 rounded-lg hover:bg-white/30"
+                  >
+                    取消
+                  </button>
+                </div>
+              )}
+            </div>
+
             <div>
               <label className="block text-sm font-medium mb-2">案情概要</label>
               <textarea
