@@ -204,15 +204,15 @@ export default function LawCard({ card }: LawCardProps) {
                   <select
                     value={editData.subcategory}
                     onChange={(e) => handleSubcategoryChange(e.target.value)}
-                    className="w-full px-4 py-3 bg-white/20 rounded-lg text-white placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-white/50 appearance-none"
+                    className="w-full px-4 py-3 bg-white rounded-lg text-gray-800 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 appearance-none"
                   >
-                    <option value="">请选择子类目（可选）</option>
+                    <option value="" className="text-gray-400">请选择子类目（可选）</option>
                     {availableSubcategories.map(sub => (
-                      <option key={sub} value={sub}>{sub}</option>
+                      <option key={sub} value={sub} className="text-gray-800 bg-white">{sub}</option>
                     ))}
-                    <option value="新增子类目">+ 新增子类目</option>
+                    <option value="新增子类目" className="text-blue-600 bg-white">+ 新增子类目</option>
                   </select>
-                  <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 w-5 h-5 text-white/60 pointer-events-none" />
+                  <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400 pointer-events-none" />
                 </div>
               ) : (
                 <div className="flex gap-2">
