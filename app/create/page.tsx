@@ -95,7 +95,7 @@ export default function CreatePage() {
     if (!currentTags.includes(tag)) {
       setFormData(prev => ({
         ...prev,
-        tags: prev.tags ? `${prev.tags} #${tag}` : `#${tag}`
+        tags: prev.tags ? `${prev.tags} #${tag} ` : `#${tag} `
       }));
     }
   };
@@ -382,6 +382,7 @@ export default function CreatePage() {
                   {existingTags.map(tag => (
                     <button
                       key={tag}
+                      type="button"
                       onClick={() => handleTagClick(tag)}
                       className={`px-3 py-1 text-sm rounded-full transition-colors ${
                         currentTags.includes(tag)
@@ -406,6 +407,7 @@ export default function CreatePage() {
                   >
                     #{tag}
                     <button
+                      type="button"
                       onClick={() => handleRemoveTag(tag)}
                       className="ml-1 hover:text-blue-900"
                     >
