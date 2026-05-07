@@ -200,7 +200,21 @@ export default function CreatePage() {
 
   const handleNewSubcategoryConfirm = () => {
     if (newSubcategoryInput.trim()) {
-      setFormData(prev => ({ ...prev, subcategory: newSubcategoryInput.trim() }));
+      const newSub = newSubcategoryInput.trim();
+      setFormData(prev => ({ ...prev, subcategory: newSub }));
+      // 将新子类目添加到可用子类目列表中
+      setAvailableSubcategories(prev => {
+        if (!prev.includes(newSub)) {
+          const updated = [...prev, newSub];
+          // 保持排序，将"待定"放最后
+          return updated.sort((a, b) => {
+            if (a === '待定') return 1;
+            if (b === '待定') return -1;
+            return a.localeCompare(b);
+          });
+        }
+        return prev;
+      });
       setIsAddingNewSubcategory(false);
     }
   };
