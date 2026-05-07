@@ -72,11 +72,11 @@ export default function CreatePage() {
     }
   }, [formData.category, cards]);
 
-  // 获取所有已有的标签（去重，最多显示20个）
+  // 获取所有已有的标签（去重）
   const existingTags = useMemo(() => {
     const allTags = cards.flatMap(card => card.tags || []);
     const uniqueTags = Array.from(new Set(allTags)).sort((a, b) => a.localeCompare(b));
-    return uniqueTags.slice(0, 20);
+    return uniqueTags;
   }, [cards]);
 
   // 获取当前输入框中已有的标签
